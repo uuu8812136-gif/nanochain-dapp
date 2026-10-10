@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NanoChain 迷你区块链 DApp</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='9' width='12' height='14' rx='3' fill='%234f6bed'/><rect x='18' y='9' width='12' height='14' rx='3' fill='%235fd3a0'/><rect x='13' y='14' width='6' height='4' fill='%2394a3b8'/></svg>" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">跳到主要内容</a>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"><i></i><i></i></span>
+        <div>
+          <h1>NanoChain 迷你区块链</h1>
+          <p class="muted">运行在 Hardhat 本地区块链上的智能合约</p>
+        </div>
+      </div>
+
+      <div class="account-pick">
+        <label for="accountSelect">当前账户</label>
+        <select id="accountSelect" disabled></select>
+        <span class="account-balance">余额：<strong id="balance">-</strong></span>
+      </div>
+
+      <div class="connection">
+        <span id="netBadge" class="badge" role="status">未连接</span>
+        <div class="seg" role="group" aria-label="连接方式">
+          <button id="btnRpc" type="button">Hardhat 本地</button>
+          <button id="btnMetaMask" type="button">MetaMask</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="banner" class="banner" role="alert" hidden></div>
+
+    <main id="conteudo" tabindex="-1">
+      <section class="stats" aria-label="合约状态">
+        <div class="stat">
+          <span class="stat-label">链上区块总数</span>
+          <span id="statTotal" class="stat-value">-</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">挖矿难度</span>
+          <span id="statDifficulty" class="stat-value">-</span>
+          <span id="statDifficultyHint" class="stat-sub"></span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">链完整性校验</span>
+          <span id="statValid" class="stat-value">-</span>
+          <span id="statValidReason" class="stat-sub"></span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">最新区块哈希</span>
+          <code id="statLastHash" class="stat-hash">-</code>
+        </div>
+      </section>
+
+      <section class="card chain-card" aria-labelledby="chainTitle">
+        <div class="card-head">
+          <div>
+            <h2 id="chainTitle">区块链条</h2>
+            <p class="muted">每个区块都保存前一个区块的哈希。点击"模拟篡改"可复现演示：数据修改只发生在页面上，链上数据不受影响。</p>
+          </div>
+          <button id="btnRefresh" type="button" class="ghost" disabled>刷新</button>
+        </div>
+        <div id="tamperReport" class="tamper-report" role="status" hidden></div>
+        <ol id="chain" class="chain" aria-label="链上区块，从创世块到最新块"></ol>
+      </section>
+
+      <div class="columns">
+        <section class="card primary-card" aria-labelledby="txFormTitle">
+          <h2 id="txFormTitle">发起新交易（上链）</h2>
+          <p class="muted">浏览器先在本地完成工作量证明（PoW）挖矿，再把 nonce 发送给合约的 <code>addBlock()</code>；合约只验证哈希是否满足前导零要求，验证不通过的交易将被回滚。</p>
+          <form id="txForm" class="form">
+            <div class="row">
+              <div class="field"><label for="fDe">付款方</label><input id="fDe" required maxlength="40" value="Alice" autocomplete="off" /></div>
+              <div class="field"><label for="fPara">收款方</label><input id="fPara" required maxlength="40" value="Bob" autocomplete="off" /></div>
+              <div class="field small"><label for="fValor">金额</label><input id="fValor" type="number" required min="0" step="any" value="10" /></div>
+            </div>
+            <label class="check"><input id="fSkipPow" type="checkbox" /> 不挖矿直接发送（观察合约如何拒绝非法交易）</label>
+            <div class="actions">
+              <button id="btnSend" class="primary big" type="submit" disabled>开始挖矿并发送</button>
+              <button id="btnCancel" type="button" hidden>取消挖矿</button>
+            </div>
+          </form>
+
+          <div id="miningBox" class="mining" role="status" aria-live="polite" hidden>
+            <div class="mining-head"><span class="spinner" aria-hidden="true"></span><strong id="miningTitle">挖矿中…</strong></div>
+            <div class="progress" aria-hidden="true"><span id="miningBar"></span></div>
+            <dl class="kv compact">
+              <div><dt>尝试次数</dt><dd id="miningTries">0</dd></div>
+              <div><dt>算力</dt><dd id="miningRate">-</dd></div>
+              <div><dt>Nonce</dt><dd id="miningNonce">-</dd></div>
+            </dl>
+            <code id="miningHash" class="hash-line"></code>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="txListTitle">
+          <h2 id="txListTitle">交易记录</h2>
+          <p class="muted" id="txEmpty">本次会话还没有发送交易。交易状态会依次显示在这里：挖矿中、等待签名、已打包、已确认或失败。</p>
+          <ol id="txList" class="txlist"></ol>
+        </section>
+      </div>
+
+      <details class="card settings">
+        <summary><h2>合约设置与信息</h2><span class="muted">难度、地址、账户</span></summary>
+        <div class="settings-body">
+          <section aria-labelledby="diffTitle">
+            <h3 id="diffTitle">挖矿难度</h3>
+            <p class="muted">只有合约所有者（部署合约的 #0 账户）可以调用 <code>setDifficulty()</code>。难度每增加 1 个前导零，挖矿工作量约变为原来的 16 倍。</p>
+            <form id="diffForm" class="form inline">
+              <div class="field small">
+                <label for="fDifficulty">十六进制前导零个数</label>
+                <input id="fDifficulty" type="number" min="0" max="6" required />
+              </div>
+              <button id="btnDifficulty" type="submit" disabled>修改</button>
+            </form>
+            <p id="diffHint" class="hint"></p>
+          </section>
+          <section aria-labelledby="infoTitle">
+            <h3 id="infoTitle">网络与合约</h3>
+            <dl class="kv stacked">
+              <div><dt>合约地址</dt><dd><code id="contractAddr">-</code></dd></div>
+              <div><dt>当前以太坊区块高度</dt><dd id="ethBlock">-</dd></div>
+              <div><dt>账户</dt><dd id="accountHint" class="hint"></dd></div>
+            </dl>
+          </section>
+        </div>
+      </details>
+    </main>
+
+    <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+    <footer class="muted">Hardhat 本地网络 · chainId 31337 · RPC http://127.0.0.1:8545</footer>
+
+    <script src="vendor/ethers.umd.min.js"></script>
+    <script src="pow.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

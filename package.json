@@ -1,0 +1,21 @@
+{
+  "name": "nanochain-dapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NanoChain 迷你区块链 DApp：Hardhat 本地区块链上的智能合约 + Web 界面",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "node": "hardhat node",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network localhost",
+    "frontend": "node server.js",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.29.1"
+  },
+  "dependencies": {
+    "ethers": "^6.17.0"
+  }
+}
